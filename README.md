@@ -461,6 +461,7 @@ The framework's strength lies in its balance of structure and flexibility - prov
 ## 📄 License
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+
 This project is a derivative work of https://github.com/google/adk-python
 ---
 
