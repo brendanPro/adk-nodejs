@@ -167,7 +167,7 @@ import {
   InMemoryMemoryService,
   EventType,
   InvocationContext
-} from 'google-adk-nodejs';
+} from 'adk-nodejs';
 
 // 1. Create services
 const sessionService = new InMemorySessionService();
@@ -224,7 +224,7 @@ runExample();
 ### Agent with Tools
 
 ```typescript
-import { BaseToolset, ITool, ToolContext, FunctionDeclaration, AdkJsonSchemaType } from 'google-adk-nodejs';
+import { BaseToolset, ITool, ToolContext, FunctionDeclaration, AdkJsonSchemaType } from 'adk-nodejs';
 
 // Create a custom tool
 class WeatherTool implements ITool {
@@ -280,7 +280,7 @@ const greeterAgent = new LlmAgent({
   description: 'Handles greetings and introductions',
   llmConfig: {
     modelName: 'gemini-2.0-flash',
-    systemInstruction: 'You are a friendly greeter. Keep responses brief and welcoming.'
+    instruction: 'You are a friendly greeter. Keep responses brief and welcoming.'
   }
 });
 
@@ -289,7 +289,7 @@ const taskAgent = new LlmAgent({
   description: 'Handles task execution and problem solving',
   llmConfig: {
     modelName: 'gemini-2.0-flash',
-    systemInstruction: 'You are a task executor. Focus on solving problems efficiently.'
+    instruction: 'You are a task executor. Focus on solving problems efficiently.'
   }
 });
 
@@ -300,7 +300,7 @@ const coordinator = new LlmAgent({
   subAgents: [greeterAgent, taskAgent],
   llmConfig: {
     modelName: 'gemini-2.0-flash',
-    systemInstruction: `You coordinate between agents:
+    instruction: `You coordinate between agents:
     - Use 'greeter' for welcomes and introductions
     - Use 'task_executor' for problem-solving tasks`
   }
@@ -320,7 +320,7 @@ const multiAgentFactory = async (agentName: string, runConfig: RunConfig) => {
 ### Custom Flow Example
 
 ```typescript
-import { BaseLlmFlow, ILlmRequestProcessor, ILlmResponseProcessor } from 'google-adk-nodejs';
+import { BaseLlmFlow, ILlmRequestProcessor, ILlmResponseProcessor } from 'adk-nodejs';
 
 class CustomFlow extends BaseLlmFlow {
   constructor() {
