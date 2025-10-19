@@ -1,13 +1,26 @@
 {
   "name": "adk-nodejs",
-  "version": "1.0.0",
-  "description": "Agent Development Kit for Node.js",
-  "private": true,
+  "version": "1.1.0",
+  "description": "Agent Development Kit for Node.js - A flexible and modular framework for developing AI agents",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "AGENTS.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
     "test": "jest"
@@ -17,10 +30,23 @@
     "agent",
     "llm",
     "development-kit",
-    "ai-generated"
+    "ai-generated",
+    "typescript",
+    "bun",
+    "nodejs",
+    "gemini",
+    "google-ai"
   ],
   "author": "Google LLC, Artur Sharipov",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brendanPro/adk-nodejs.git"
+  },
+  "homepage": "https://github.com/brendanPro/adk-nodejs#readme",
+  "bugs": {
+    "url": "https://github.com/brendanPro/adk-nodejs/issues"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
@@ -55,6 +81,7 @@
     "zod-to-json-schema": "^3.22.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
   }
 } 

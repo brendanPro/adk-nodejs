@@ -112,6 +112,7 @@ export abstract class BaseAgent implements IAgent {
       parentContext: parentContext || undefined,
       session: session,
       runConfig: resolvedRunConfig, // Now guaranteed to be a valid RunConfig
+      services: parentContext?.services, // Preserve services from parent context
       // liveRequestQueue and activeStreamingTools would be initialized if used
     };
   }

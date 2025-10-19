@@ -1,5 +1,7 @@
 # Agent Development Kit (ADK)
 
+> **Note**: This is a fork of [kodart/adk-nodejs](https://github.com/kodart/adk-nodejs) with additional features and improvements.
+
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 <html>
