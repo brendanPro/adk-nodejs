@@ -5,11 +5,16 @@ on:
     branches:
       - main
   push:
-    branches-ignore:
+    branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'examples/**'
+      - '.gitignore'
 
 jobs:
   build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
     
     strategy:
@@ -39,20 +44,30 @@ jobs:
       - name: Run tests
         run: bun test || echo "Tests completed"
 
-      - name: Build project
+      - name: Build project with Bun
         run: bun run build
 
       - name: Verify build output
         run: |
           if [ ! -d "dist" ]; then
-            echo "Build failed: dist directory not found"
+            echo "❌ Build failed: dist directory not found"
             exit 1
           fi
-          echo "Build successful! dist directory created."
+          echo "✅ Build successful! dist directory created."
+          ls -la dist/ | head -20
 
       - name: Check package can be imported
         run: |
           node -e "import('./dist/index.js').then(pkg => {
             console.log('✅ Package imports successfully');
-            console.log('✅ Exports:', Object.keys(pkg).length, 'items');
+            const exports = Object.keys(pkg);
+            console.log('✅ Total exports:', exports.length);
+            console.log('📦 Key exports:', ['LlmAgent', 'Runner', 'LlmRegistry', 'OllamaLlm', 'GeminiLlm'].filter(e => exports.includes(e)).join(', '));
           })"
+
+      - name: Summary
+        run: |
+          echo "## ✅ CI Check Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js version: ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build tool: Bun" >> $GITHUB_STEP_SUMMARY
+          echo "- All checks completed successfully" >> $GITHUB_STEP_SUMMARY

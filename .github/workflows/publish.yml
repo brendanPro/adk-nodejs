@@ -1,13 +1,6 @@
-name: Build, Version, and Publish
+name: Build and Publish
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - 'examples/**'
-      - '.gitignore'
   workflow_dispatch:
     inputs:
       version-bump:
@@ -21,20 +14,23 @@ on:
           - major
 
 jobs:
-  build-and-test:
+  # First run CI checks
+  ci-checks:
+    name: CI Checks
     runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: ${{ matrix.node-version }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -61,10 +57,29 @@ jobs:
           fi
           echo "Build successful! dist directory created."
 
-  version-and-publish:
-    needs: build-and-test
+      - name: Check package can be imported
+        run: |
+          node -e "import('./dist/index.js').then(pkg => {
+            console.log('✅ Package imports successfully');
+            console.log('✅ Exports:', Object.keys(pkg).length, 'items');
+          })"
+
+  # Manual approval before publish
+  approval:
+    name: Approve Publication
+    needs: ci-checks
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+    steps:
+      - name: Approval Required
+        run: echo "Manual approval required to proceed with publishing"
+
+  # Version bump and publish
+  publish:
+    name: Version and Publish
+    needs: approval
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -94,27 +109,10 @@ jobs:
       - name: Build project
         run: bun run build
 
-      - name: Determine version bump type
-        id: bump-type
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "type=${{ github.event.inputs.version-bump }}" >> $GITHUB_OUTPUT
-          else
-            # Auto-detect from commit message
-            COMMIT_MSG=$(git log -1 --pretty=%B)
-            if echo "$COMMIT_MSG" | grep -qiE "breaking|major"; then
-              echo "type=major" >> $GITHUB_OUTPUT
-            elif echo "$COMMIT_MSG" | grep -qiE "feat|feature|minor"; then
-              echo "type=minor" >> $GITHUB_OUTPUT
-            else
-              echo "type=patch" >> $GITHUB_OUTPUT
-            fi
-          fi
-
       - name: Bump version
         id: version
         run: |
-          BUMP_TYPE="${{ steps.bump-type.outputs.type }}"
+          BUMP_TYPE="${{ github.event.inputs.version-bump }}"
           echo "Bumping version: $BUMP_TYPE"
           
           # Bump version using npm
@@ -122,11 +120,24 @@ jobs:
           echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
 
+      - name: Update CHANGELOG
+        run: |
+          VERSION="${{ steps.version.outputs.new-version }}"
+          DATE=$(date +%Y-%m-%d)
+          
+          # Create changelog entry
+          sed -i "/## \[Unreleased\]/a\\
+          \\
+          ## [$VERSION] - $DATE\\
+          \\
+          ### Changed\\
+          - Version bump to $VERSION" CHANGELOG.md
+
       - name: Commit version bump
         run: |
-          git add package.json package-lock.json
-          git commit -m "chore: bump version to ${{ steps.version.outputs.new-version }}" || echo "No changes to commit"
-          git push origin main || echo "No changes to push"
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new-version }}"
+          git push origin main
 
       - name: Create Git tag
         run: |
@@ -158,3 +169,9 @@ jobs:
             ```
           draft: false
           prerelease: false
+
+      - name: Notify Success
+        run: |
+          echo "✅ Successfully published version ${{ steps.version.outputs.new-version }}"
+          echo "📦 Package: https://www.npmjs.com/package/adk-nodejs"
+          echo "🎉 Release: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.new-version }}"

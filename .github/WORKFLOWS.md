@@ -1,282 +1,301 @@
 # GitHub Actions Workflows
 
-This repository uses GitHub Actions for automated CI/CD. Here's how the workflows are organized:
+This repository uses GitHub Actions for automated CI/CD with **Bun** as the build tool.
 
-## 🔄 Available Workflows
+## 🔄 Workflows Overview
 
 ### 1. **CI Workflow** (`ci.yml`)
-**Triggers**: Pull requests and non-main branch pushes
+**Triggers**: 
+- Pull requests to `main`
+- Pushes to `main` branch
 
 **What it does**:
-- ✅ Runs on Node.js 18 and 20 to ensure compatibility
-- ✅ Installs dependencies with Bun
+- ✅ Runs on Node.js 18 and 20 (ensures compatibility)
+- ✅ Installs dependencies with **Bun**
 - ✅ Runs linter
 - ✅ Runs tests
-- ✅ Builds the project
+- ✅ Builds the project with **Bun**
 - ✅ Verifies the build output
 - ✅ Tests that the package can be imported
 
-**Purpose**: Ensures code quality before merging to main
+**Purpose**: Ensures code quality on every commit and PR
 
 ---
 
-### 2. **Build, Version, and Publish Workflow** (`publish.yml`)
-**Triggers**: 
-- Pushes to `main` branch (automatic)
-- Manual workflow dispatch (with version selection)
+### 2. **Build and Publish Workflow** (`publish.yml`)
+**Trigger**: **Manual only** (workflow_dispatch)
 
-**What it does**:
-1. **Build & Test Phase**:
-   - Installs dependencies
-   - Runs linter and tests
-   - Builds the project
-   - Verifies build output
+**What it does** (3-stage process):
 
-2. **Version & Publish Phase**:
-   - Automatically determines version bump type from commit message
-   - Bumps the version in `package.json`
-   - Commits the version change
-   - Creates a Git tag
-   - Publishes to npm
-   - Creates a GitHub release
+#### **Stage 1: CI Checks** ✅
+- Runs complete CI checks on Node.js 18 and 20
+- All checks must pass before proceeding
 
-**Version Bump Logic**:
-- **Major** (`1.0.0` → `2.0.0`): Commit contains "breaking" or "major"
-- **Minor** (`1.0.0` → `1.1.0`): Commit contains "feat", "feature", or "minor"
-- **Patch** (`1.0.0` → `1.0.1`): Default for all other commits
+#### **Stage 2: Manual Approval** 🔒
+- **Requires manual approval** in GitHub Actions
+- Prevents accidental publishing
+- Uses GitHub Environment protection
 
----
+#### **Stage 3: Publish** 🚀
+- Bumps version (patch/minor/major - your choice)
+- Updates CHANGELOG.md automatically
+- Commits version changes
+- Creates Git tag
+- Publishes to npm
+- Creates GitHub release
 
-## 🚀 How to Use
-
-### Automatic Publishing (Recommended)
-
-Simply push to the `main` branch with a descriptive commit message:
-
-```bash
-# For a patch release (bug fixes)
-git commit -m "fix: resolve issue with LLM registry"
-git push origin main
-
-# For a minor release (new features)
-git commit -m "feat: add support for Claude models"
-git push origin main
-
-# For a major release (breaking changes)
-git commit -m "breaking: remove deprecated API methods"
-git push origin main
-```
-
-The workflow will:
-1. ✅ Build and test your code
-2. ✅ Automatically bump the version
-3. ✅ Publish to npm
-4. ✅ Create a GitHub release
+**Purpose**: Safe, controlled publishing with human approval
 
 ---
 
-### Manual Publishing
+## 🚀 How to Publish (Manual Process)
 
-You can also manually trigger a publish with a specific version bump:
+### Step 1: Trigger the Workflow
 
 1. Go to **Actions** tab in GitHub
-2. Select **"Build, Version, and Publish"** workflow
-3. Click **"Run workflow"**
+2. Click **"Build and Publish"** workflow
+3. Click **"Run workflow"** (green button on right)
 4. Choose version bump type:
-   - `patch` - Bug fixes (1.0.0 → 1.0.1)
-   - `minor` - New features (1.0.0 → 1.1.0)
-   - `major` - Breaking changes (1.0.0 → 2.0.0)
+   - `patch` - Bug fixes (1.1.0 → 1.1.1)
+   - `minor` - New features (1.1.0 → 1.2.0)
+   - `major` - Breaking changes (1.1.0 → 2.0.0)
 5. Click **"Run workflow"**
+
+### Step 2: Wait for CI Checks
+
+The workflow will run all CI checks first:
+- Linting
+- Testing
+- Building on Node.js 18 and 20
+- Import verification
+
+⏱️ **Wait for**: All CI checks to pass (green checkmarks)
+
+### Step 3: Approve Publication 🔒
+
+After CI passes, you'll see a yellow waiting indicator:
+
+1. Click on the workflow run
+2. You'll see "Approve Publication" waiting
+3. Click **"Review deployments"** button
+4. Check the **"production"** checkbox
+5. Click **"Approve and deploy"**
+
+### Step 4: Watch it Publish 🎉
+
+After approval, the workflow will:
+- ✅ Bump version
+- ✅ Update CHANGELOG
+- ✅ Commit changes
+- ✅ Create Git tag
+- ✅ Publish to npm
+- ✅ Create GitHub release
 
 ---
 
-## 🔐 Required Secrets
+## 🔐 Required Setup
 
-You need to set up the following secrets in your GitHub repository:
+### 1. Create npm Token
 
-### 1. `NPM_TOKEN`
-
-**Required for**: Publishing to npm
-
-**How to get it**:
 ```bash
-# Login to npm
 npm login
-
-# Generate a token (Automation type recommended)
 npm token create --type=automation
 ```
 
-**How to add it**:
-1. Go to your GitHub repository
-2. Settings → Secrets and variables → Actions
-3. Click "New repository secret"
-4. Name: `NPM_TOKEN`
-5. Value: Your npm token
-6. Click "Add secret"
+### 2. Add Secrets to GitHub
 
-### 2. `GITHUB_TOKEN`
+Go to: `Settings → Secrets and variables → Actions`
 
-**Required for**: Creating releases
+Add secret:
+- **Name**: `NPM_TOKEN`
+- **Value**: Your npm token from step 1
 
-**How to set it up**:
-- This is automatically provided by GitHub Actions
-- No manual setup needed
-- Ensure "Read and write permissions" are enabled:
-  1. Settings → Actions → General
-  2. Workflow permissions → "Read and write permissions"
-  3. Save
+### 3. Create Production Environment
 
----
+Go to: `Settings → Environments`
 
-## 📋 Workflow Files
+1. Click **"New environment"**
+2. Name: `production`
+3. Add **"Required reviewers"**:
+   - Add yourself or team members who can approve
+4. Click **"Save protection rules"**
 
-| File | Purpose | Trigger |
-|------|---------|---------|
-| `ci.yml` | Continuous Integration | PRs and feature branches |
-| `publish.yml` | Build, version, and publish | Main branch pushes |
-| `webpack.yml` | Legacy webpack config | (if still needed) |
+### 4. Enable Workflow Permissions
+
+Go to: `Settings → Actions → General`
+
+- Select **"Read and write permissions"**
+- Check **"Allow GitHub Actions to create and approve pull requests"**
+- Click **"Save"**
 
 ---
 
-## 🛠️ Customization
+## 📋 Workflow Architecture
 
-### Changing Version Bump Rules
-
-Edit `.github/workflows/publish.yml`, find the "Determine version bump type" step:
-
-```yaml
-- name: Determine version bump type
-  id: bump-type
-  run: |
-    COMMIT_MSG=$(git log -1 --pretty=%B)
-    if echo "$COMMIT_MSG" | grep -qiE "breaking|major"; then
-      echo "type=major" >> $GITHUB_OUTPUT
-    elif echo "$COMMIT_MSG" | grep -qiE "feat|feature|minor"; then
-      echo "type=minor" >> $GITHUB_OUTPUT
-    else
-      echo "type=patch" >> $GITHUB_OUTPUT
-    fi
+```
+┌─────────────────────────────────────────┐
+│   Manual Trigger (workflow_dispatch)    │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│  Stage 1: CI Checks (Node 18 & 20)     │
+│  - Install deps (Bun)                   │
+│  - Lint, Test, Build                    │
+│  - Verify imports                       │
+└─────────────────┬───────────────────────┘
+                  │ ✅ All checks pass
+                  ▼
+┌─────────────────────────────────────────┐
+│  Stage 2: Manual Approval Required      │
+│  🔒 Human reviewer must approve         │
+└─────────────────┬───────────────────────┘
+                  │ ✅ Approved
+                  ▼
+┌─────────────────────────────────────────┐
+│  Stage 3: Version & Publish             │
+│  - Bump version                         │
+│  - Update CHANGELOG                     │
+│  - Commit & tag                         │
+│  - Publish to npm                       │
+│  - Create GitHub release                │
+└─────────────────────────────────────────┘
 ```
 
-Modify the `grep` patterns to match your commit conventions.
+---
 
-### Changing Node.js Versions
+## 🛠️ Build Tool: Bun
+
+All workflows use **Bun** for:
+- 📦 **Dependency installation**: `bun install`
+- 🔨 **Building**: `bun run build`
+- ✅ **Testing**: `bun test`
+- 🎨 **Linting**: `bun run lint`
+
+**Why Bun?**
+- ⚡ Faster than npm/yarn
+- 🔧 Built-in TypeScript support
+- 📦 Compatible with Node.js packages
+
+---
+
+## 🔍 Troubleshooting
+
+### "Waiting for approval" forever
+
+**Solution**: You need to set up the `production` environment with required reviewers (see setup step 3)
+
+### npm publish fails with 403
+
+**Problem**: npm token invalid or lacks permissions
+
+**Solution**:
+1. Generate new token: `npm token create --type=automation`
+2. Update GitHub secret
+3. Ensure token has "Automation" or "Publish" permissions
+
+### CI checks fail
+
+**Problem**: Build, lint, or test errors
+
+**Solution**:
+1. Check the workflow logs in Actions tab
+2. Fix issues locally: `bun run build && bun test`
+3. Commit fixes and re-run workflow
+
+### Version bump fails
+
+**Problem**: Git push permissions
+
+**Solution**: Ensure "Read and write permissions" are enabled in Actions settings
+
+---
+
+## 📊 CI vs Publish Workflow
+
+| Feature | CI Workflow | Publish Workflow |
+|---------|-------------|------------------|
+| **Trigger** | Automatic (push/PR) | Manual only |
+| **Approval** | None | Required |
+| **Version Bump** | No | Yes |
+| **npm Publish** | No | Yes |
+| **Node Versions** | 18, 20 | 20 only |
+| **Purpose** | Quality checks | Release |
+
+---
+
+## 🎯 Best Practices
+
+### Before Publishing
+
+1. ✅ **Merge all PRs**: Ensure `main` branch is ready
+2. ✅ **Update CHANGELOG**: Add notes about changes
+3. ✅ **Test locally**: `bun install && bun run build && bun test`
+4. ✅ **Check version**: Decide if patch/minor/major
+
+### During Publishing
+
+1. ⏱️ **Wait for CI**: Let all checks complete
+2. 🔍 **Review logs**: Check for any warnings
+3. ✅ **Approve carefully**: Double-check version bump type
+4. 👀 **Watch the publish**: Monitor the workflow execution
+
+### After Publishing
+
+1. ✅ **Verify on npm**: `npm view adk-nodejs`
+2. ✅ **Test installation**: `npm install adk-nodejs@latest`
+3. ✅ **Check GitHub release**: Verify release notes
+4. 📢 **Announce**: Share with users if major release
+
+---
+
+## 🔧 Customization
+
+### Change Node.js Versions
 
 Edit `.github/workflows/ci.yml`:
-
 ```yaml
 strategy:
   matrix:
-    node-version: [18, 20]  # Add or remove versions
+    node-version: [18, 20, 21]  # Add or remove versions
 ```
 
-### Adding More Checks
-
-Add steps before the publish phase:
+### Add More CI Checks
 
 ```yaml
 - name: Check code coverage
   run: bun run coverage
 
-- name: Run security audit
+- name: Security audit
   run: npm audit --audit-level=moderate
-
-- name: Check for outdated dependencies
-  run: npm outdated || true
 ```
 
----
+### Modify Auto-changelog
 
-## 🐛 Troubleshooting
-
-### Publishing Fails
-
-**Error**: `npm ERR! code ENEEDAUTH`
-- **Solution**: Check that `NPM_TOKEN` secret is set correctly
-
-**Error**: `npm ERR! 403 Forbidden`
-- **Solution**: Ensure your npm token has "Automation" or "Publish" permissions
-
-### Version Bump Not Working
-
-**Error**: `fatal: unable to access... Permission denied`
-- **Solution**: Ensure workflow has write permissions (Settings → Actions → General)
-
-### Build Fails in CI but Works Locally
-
-**Common causes**:
-- Environment variables not set in GitHub Actions
-- Different Node.js versions
-- Missing dependencies
-
-**Solution**: Check the build logs in Actions tab for specific errors
+Edit the "Update CHANGELOG" step in `publish.yml` to customize the changelog format.
 
 ---
 
-## 📚 Best Practices
+## 📚 Quick Reference
 
-1. **Use Conventional Commits**: Structure your commit messages
-   ```
-   feat: add new feature
-   fix: resolve bug
-   docs: update documentation
-   chore: maintenance tasks
-   ```
-
-2. **Test Locally First**: Always test your changes locally before pushing to main
-
-3. **Review the Build Logs**: Check Actions tab after each push
-
-4. **Semantic Versioning**: Follow semver principles
-   - MAJOR: Breaking changes
-   - MINOR: New features (backward compatible)
-   - PATCH: Bug fixes
-
-5. **Keep Secrets Secure**: Never commit tokens or secrets to the repository
+| Task | Command/Location |
+|------|------------------|
+| **Trigger publish** | Actions → Build and Publish → Run workflow |
+| **Approve publish** | Actions → Click run → Review deployments |
+| **Check CI status** | Actions tab → CI workflow |
+| **View npm package** | `npm view adk-nodejs` |
+| **Local build** | `bun run build` |
+| **Local test** | `bun test` |
 
 ---
 
-## 🎯 Quick Reference
+## 🎉 Summary
 
-| Action | Command |
-|--------|---------|
-| Push with auto-versioning | `git push origin main` |
-| Manual workflow trigger | GitHub → Actions → Run workflow |
-| Check workflow status | GitHub → Actions tab |
-| View published package | `npm view adk-nodejs` |
-| Install specific version | `npm install adk-nodejs@1.1.0` |
+Your CI/CD pipeline is designed for **safety and control**:
 
----
+- ✅ **Automatic CI**: Every commit is checked
+- 🔒 **Manual approval**: No accidental publishes
+- ⚡ **Bun-powered**: Fast builds and tests
+- 📦 **Complete automation**: Version, tag, publish, release
 
-## 📦 Example Workflow
-
-```bash
-# 1. Make changes
-git checkout -b feature/new-llm-support
-# ... make changes ...
-
-# 2. Commit with conventional commit message
-git commit -m "feat: add OpenAI integration"
-
-# 3. Push and create PR
-git push origin feature/new-llm-support
-# Create PR on GitHub
-
-# 4. CI runs automatically on PR
-# ✅ Build, test, lint
-
-# 5. Merge PR to main
-# Automatic publish workflow runs:
-# ✅ Build & test
-# ✅ Version bump (minor, because "feat")
-# ✅ Publish to npm
-# ✅ Create GitHub release
-
-# 6. Users can now install the new version!
-npm install adk-nodejs
-```
-
----
-
-Your automated CI/CD pipeline is ready! 🚀
+Happy publishing! 🚀
