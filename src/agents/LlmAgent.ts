@@ -153,6 +153,9 @@ export class LlmAgent extends BaseAgent {
       // Track events that were in the session before the flow runs
       const eventsBeforeFlow = [...currentContext.session.events];
       
+      // Track yielded event IDs to prevent duplicates
+      const yieldedEventIds = new Set<string>();
+      
       const eventFromFlow = await this.flow.runLlmInteraction(initialLlmRequest, llm, currentContext);
       
       // Yield any new events that were added to the session during flow execution
@@ -160,14 +163,18 @@ export class LlmAgent extends BaseAgent {
         e => !eventsBeforeFlow.find(existing => existing.eventId === e.eventId)
       );
       for (const newEvent of newEventsFromFlow) {
-        yield newEvent;
+        if (!yieldedEventIds.has(newEvent.eventId)) {
+          yield newEvent;
+          yieldedEventIds.add(newEvent.eventId);
+        }
       }
       
       if (eventFromFlow && !currentContext.session.events.find(e => e.eventId === eventFromFlow.eventId)) {
         currentContext.session.events.push(eventFromFlow);
       }
-      if (eventFromFlow) {
+      if (eventFromFlow && !yieldedEventIds.has(eventFromFlow.eventId)) {
         yield eventFromFlow;
+        yieldedEventIds.add(eventFromFlow.eventId);
       }
       flowEventOutcome = eventFromFlow;
     } catch (flowError: any) {

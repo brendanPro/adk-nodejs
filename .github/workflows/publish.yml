@@ -1,6 +1,11 @@
 name: Build and Publish
 
 on:
+  push:
+    tags:
+      - '*-major'
+      - '*-minor' 
+      - '*-patch'
   workflow_dispatch:
     inputs:
       version-bump:
@@ -112,7 +117,18 @@ jobs:
       - name: Bump version
         id: version
         run: |
-          BUMP_TYPE="${{ github.event.inputs.version-bump }}"
+          # Determine bump type from trigger
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Extract version type from tag (format: YYYYMMDD-type)
+            TAG_NAME="${{ github.ref_name }}"
+            BUMP_TYPE=$(echo "$TAG_NAME" | sed 's/.*-//')
+            echo "Tag-based version bump: $BUMP_TYPE from tag $TAG_NAME"
+          else
+            # Manual dispatch with input
+            BUMP_TYPE="${{ github.event.inputs.version-bump }}"
+            echo "Manual version bump: $BUMP_TYPE"
+          fi
+          
           echo "Bumping version: $BUMP_TYPE"
           
           # Bump version using npm
@@ -141,8 +157,13 @@ jobs:
 
       - name: Create Git tag
         run: |
-          git tag ${{ steps.version.outputs.new-version }}
-          git push origin ${{ steps.version.outputs.new-version }}
+          # Only create tag if not triggered by existing tag
+          if [ "${{ github.event_name }}" != "push" ]; then
+            git tag ${{ steps.version.outputs.new-version }}
+            git push origin ${{ steps.version.outputs.new-version }}
+          else
+            echo "Using existing tag: ${{ github.ref_name }}"
+          fi
 
       - name: Publish to npm
         run: npm publish
@@ -167,6 +188,9 @@ jobs:
             # or
             bun add adk-nodejs@${{ steps.version.outputs.new-version }}
             ```
+            
+            **Triggered by:** ${{ github.event_name == 'push' && 'Tag push' || 'Manual dispatch' }}
+            ${{ github.event_name == 'push' && format('**Tag:** {0}', github.ref_name) || '' }}
           draft: false
           prerelease: false
 
@@ -175,3 +199,5 @@ jobs:
           echo "✅ Successfully published version ${{ steps.version.outputs.new-version }}"
           echo "📦 Package: https://www.npmjs.com/package/adk-nodejs"
           echo "🎉 Release: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.new-version }}"
+          echo "🚀 Triggered by: ${{ github.event_name == 'push' && 'Tag push' || 'Manual dispatch' }}"
+          ${{ github.event_name == 'push' && format('echo "🏷️  Tag: {0}"', github.ref_name) || '' }}

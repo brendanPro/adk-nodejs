@@ -58,6 +58,7 @@ export class SingleFlow extends BaseLlmFlow {
   ): Promise<Event> {
     let currentRequest = initialLlmRequest;
     let llmResponse: LlmResponse | undefined;
+    let lastLlmResponseEvent: Event | undefined; // Track the last created event
     let interactionCount = 0;
     const MAX_INTERACTIONS = 5; // Max tool/function call iterations within a single runLlmInteraction call
 
@@ -72,6 +73,7 @@ export class SingleFlow extends BaseLlmFlow {
 
         // Create and store LLM_RESPONSE event for each LLM call
         const llmResponseEvent = this.createEventFromLlmResponse(currentTurnLlmResponse, currentRequest, context);
+        lastLlmResponseEvent = llmResponseEvent; // Keep reference to the last event created
         if (!context.session.events.find(e => e.eventId === llmResponseEvent.eventId)) {
           context.session.events.push(llmResponseEvent);
         }
@@ -117,8 +119,8 @@ export class SingleFlow extends BaseLlmFlow {
         // Should not happen if loop executed at least once and didn't throw/return early
         throw new Error('LLM response is unexpectedly undefined after interaction loop.');
       }
-      // If loop finished without re-run, the last llmResponse is the final one
-      return this.createEventFromLlmResponse(llmResponse, currentRequest, context);
+      // Return the same event that was stored in the session, not a new one
+      return lastLlmResponseEvent || this.createEventFromLlmResponse(llmResponse, currentRequest, context);
 
     } catch (error: any) {
       // Generic error handling for issues during processing or LLM call
