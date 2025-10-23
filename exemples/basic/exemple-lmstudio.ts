@@ -9,7 +9,7 @@ import {
     Runner,
     LMStudioLlm,
     LlmRegistry  // Now properly exported from main index
-  } from './dist/index.js';
+  } from '../../dist/index.js';
   
   console.log('🎬 ADK with LM Studio Local LLM Example');
   console.log('======================================');

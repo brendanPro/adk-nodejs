@@ -9,7 +9,7 @@ import {
     Runner,
     OllamaLlm,
     LlmRegistry  // Now properly exported from main index
-  } from './dist/index.js';
+  } from '../../dist/index.js';
   import * as readline from 'readline';
   
   console.log('🦙 ADK with Ollama Local LLM Example');

@@ -9,7 +9,7 @@ import {
     Runner,
     GeminiLlm,
     LlmRegistry  // Now properly exported from main index
-  } from './dist/index.js';
+  } from '../../dist/index.js';
   
   // 1. Create services
   const sessionService = new InMemorySessionService();
